@@ -5,8 +5,7 @@ import sqlite3
 # Configuración de página
 st.set_page_config(page_title="Powen Asset Manager", layout="wide", page_icon="☀️")
 
-# --- 1. DICCIONARIO DE GEOLOCALIZACIÓN (32 ESTADOS) ---
-# Coordenadas aproximadas del centro de cada estado para el mapa
+# --- 1. DICCIONARIO DE GEOLOCALIZACIÓN (32 ESTADOS - NOMBRES AJUSTADOS) ---
 COORDENADAS = {
     "Aguascalientes": [21.8853, -102.2916],
     "Baja California": [30.8406, -115.2838],
@@ -15,7 +14,7 @@ COORDENADAS = {
     "Chiapas": [16.7569, -93.1292],
     "Chihuahua": [28.6330, -106.0691],
     "Ciudad de México": [19.4326, -99.1332],
-    "Coahuila de Zaragoza": [27.0587, -101.7068],
+    "Coahuila": [27.0587, -101.7068],  # Ajustado
     "Colima": [19.2452, -103.7241],
     "Durango": [24.0277, -104.6532],
     "Guanajuato": [21.0190, -101.2574],
@@ -23,7 +22,7 @@ COORDENADAS = {
     "Hidalgo": [20.0911, -98.7624],
     "Jalisco": [20.6597, -103.3496],
     "Estado de México": [19.3583, -99.6556],
-    "Michoacán de Ocampo": [19.5665, -101.7068],
+    "Michoacán": [19.5665, -101.7068], # Ajustado
     "Morelos": [18.6813, -99.1013],
     "Nayarit": [21.7514, -104.8455],
     "Nuevo León": [25.6866, -100.3161],
@@ -37,7 +36,7 @@ COORDENADAS = {
     "Tabasco": [17.8409, -92.6189],
     "Tamaulipas": [24.2669, -98.8363],
     "Tlaxcala": [19.3139, -98.2404],
-    "Veracruz de Ignacio de la Llave": [19.1738, -96.1342],
+    "Veracruz": [19.1738, -96.1342],   # Ajustado
     "Yucatán": [20.9674, -89.5926],
     "Zacatecas": [22.7709, -102.5832]
 }
@@ -88,8 +87,7 @@ elif menu == "➕ Registro de Proyectos":
         nombre = col1.text_input("Nombre del Proyecto")
         potencia = col2.number_input("Capacidad (kW)", min_value=0.0)
         
-        # --- AQUÍ ESTÁ EL CAMBIO IMPORTANTE ---
-        # Ordenamos la lista alfabéticamente para que sea fácil buscar
+        # Lista ordenada de estados
         lista_estados = sorted(list(COORDENADAS.keys()))
         ubicacion = col1.selectbox("Ubicación", lista_estados) 
         
@@ -110,7 +108,7 @@ elif menu == "🗺️ Mapa de Operaciones":
     df_mapa = pd.read_sql_query("SELECT * FROM proyectos", conn)
     
     if not df_mapa.empty:
-        # Mapeamos usando el nuevo diccionario completo
+        # Mapeamos coordenadas
         df_mapa['lat'] = df_mapa['ubicacion'].map(lambda x: COORDENADAS.get(x, [None, None])[0])
         df_mapa['lon'] = df_mapa['ubicacion'].map(lambda x: COORDENADAS.get(x, [None, None])[1])
         
