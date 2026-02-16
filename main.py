@@ -60,7 +60,7 @@ if menu == "📊 Dashboard":
         st.divider()
         col_graf, col_tabla = st.columns([1, 2])
         # Ajuste para el warning de use_container_width
-        col_graf.bar_chart(df.groupby("ubicacion")["potencia"].sum(), color="#FFD700", width=0) 
+        col_graf.bar_chart(df.groupby("ubicacion")["potencia"].sum(), color="#FFD700")
         col_tabla.dataframe(df, use_container_width=True)
     else:
         st.info("La base de datos en la nube está vacía. ¡Registra el primer proyecto!")
