@@ -1,59 +1,68 @@
 import streamlit as st
 import pandas as pd
 import sqlite3
-import os
 
-st.set_page_config(page_title="Powen Asset Manager", layout="wide")
-st.title("☀️ Powen - Control de Proyectos")
+# Configuración profesional de la página
+st.set_page_config(page_title="Powen Asset Manager", layout="wide", page_icon="☀️")
 
-# 1. Conectar a SQL
-conn = sqlite3.connect("powen_data.db", check_same_thread=False)
-conn.execute('''CREATE TABLE IF NOT EXISTS proyectos 
-                (id INTEGER PRIMARY KEY AUTOINCREMENT, 
-                 proyecto TEXT, potencia REAL, ubicacion TEXT, vendedor TEXT)''')
-conn.commit()
+# --- CONEXIÓN A BASE DE DATOS ---
+def get_connection():
+    return sqlite3.connect("powen_data.db", check_same_thread=False)
 
-# 2. Migración "Inteligente"
-if os.path.exists("PROYECTOS KISHOA.xlsx"):
-    count = conn.execute("SELECT COUNT(*) FROM proyectos").fetchone()[0]
-    if count == 0:
-        try:
-            # Probamos leer el Excel saltando filas hasta encontrar los títulos
-            # Si el error persiste, cambia 'header=1' por 'header=2'
-            df_excel = pd.read_excel("PROYECTOS KISHOA.xlsx", header=1)
-            
-            # Limpiamos los nombres de las columnas detectadas
-            df_excel.columns = df_excel.columns.astype(str).str.strip().str.upper()
-            
-            # Buscamos las columnas reales aunque tengan otros nombres
-            # Mapeo: {Nombre en Excel : Nombre en SQL}
-            columnas = {'PROYECTO': 'proyecto', 'POTENCIA': 'potencia', 'UBICACIÓN': 'ubicacion'}
-            
-            # Solo filtramos las que existan
-            cols_encontradas = [c for c in columnas.keys() if c in df_excel.columns]
-            
-            if len(cols_encontradas) > 0:
-                df_migrar = df_excel[cols_encontradas].copy()
-                df_migrar.rename(columns=columnas, inplace=True)
-                df_migrar['vendedor'] = "Carga Inicial"
-                df_migrar.to_sql('proyectos', conn, if_exists='append', index=False)
-                st.success("✅ Datos migrados correctamente a SQL.")
+conn = get_connection()
+
+# --- NAVEGACIÓN LATERAL ---
+st.sidebar.image("https://upload.wikimedia.org/wikipedia/commons/5/50/Closed_Access_logo_transparent.png", width=100) # Puedes poner el logo de Powen aquí
+menu = st.sidebar.radio("MENÚ PRINCIPAL", ["📊 Dashboard", "➕ Registro de Proyectos", "🗺️ Mapa de Operaciones"])
+
+# --- SECCIÓN 1: DASHBOARD ---
+if menu == "📊 Dashboard":
+    st.title("📊 Panel de Control Fotovoltaico")
+    df = pd.read_sql_query("SELECT * FROM proyectos", conn)
+    
+    if not df.empty:
+        # Métricas principales
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Proyectos Totales", len(df))
+        c2.metric("Potencia Instalada", f"{df['potencia'].sum():,.2f} kW")
+        c3.metric("Ubicaciones", df['ubicacion'].nunique())
+        
+        st.divider()
+        
+        # Gráfica de potencia por proyecto
+        st.subheader("Capacidad por Proyecto")
+        st.bar_chart(data=df, x="proyecto", y="potencia", color="#FFD700")
+        
+        st.subheader("Listado Maestro")
+        st.dataframe(df, use_container_width=True)
+    else:
+        st.info("Aún no hay datos. Dirígete a 'Registro de Proyectos' para añadir el primero.")
+
+# --- SECCIÓN 2: REGISTRO ---
+elif menu == "➕ Registro de Proyectos":
+    st.title("➕ Alta de Nuevos Proyectos")
+    st.write("Ingresa los detalles técnicos para actualizar la base de datos de Powen.")
+    
+    with st.form("form_registro", clear_on_submit=True):
+        col1, col2 = st.columns(2)
+        nombre = col1.text_input("Nombre del Proyecto (Cliente/Sitio)")
+        potencia = col2.number_input("Capacidad Instalada (kW)", min_value=0.0, step=0.1)
+        ubicacion = col1.selectbox("Estado de la República", ["CDMX", "Edomex", "Querétaro", "Jalisco", "Nuevo León", "Yucatán"])
+        vendedor = col2.text_input("Ingeniero / Vendedor Responsable")
+        
+        submitted = st.form_submit_button("Confirmar Registro")
+        
+        if submitted:
+            if nombre and potencia > 0:
+                conn.execute("INSERT INTO proyectos (proyecto, potencia, ubicacion, vendedor) VALUES (?,?,?,?)",
+                             (nombre, potencia, ubicacion, vendedor))
+                conn.commit()
+                st.success(f"✅ Proyecto '{nombre}' guardado exitosamente en SQL.")
             else:
-                st.error(f"No encontré las columnas. Columnas en el Excel: {list(df_excel.columns)}")
-        except Exception as e:
-            st.error(f"Error al leer Excel: {e}")
+                st.error("Por favor completa los campos obligatorios (Nombre y Potencia).")
 
-# 3. Formulario de Captura
-with st.expander("➕ Registrar Nuevo Proyecto"):
-    with st.form("nuevo"):
-        p_nom = st.text_input("Nombre del Proyecto")
-        p_pot = st.number_input("Potencia (kW)", min_value=0.0)
-        p_ubi = st.text_input("Ubicación")
-        if st.form_submit_button("Guardar"):
-            conn.execute("INSERT INTO proyectos (proyecto, potencia, ubicacion) VALUES (?,?,?)", (p_nom, p_pot, p_ubi))
-            conn.commit()
-            st.rerun()
-
-# 4. Mostrar Datos desde SQL (No más Excel)
-df_final = pd.read_sql_query("SELECT * FROM proyectos", conn)
-st.dataframe(df_final, use_container_width=True)
+# --- SECCIÓN 3: MAPA ---
+elif menu == "🗺️ Mapa de Operaciones":
+    st.title("🗺️ Cobertura Nacional")
+    st.info("Próximamente: Integración de coordenadas GPS para visualizar cada planta fotovoltaica.")
+    # Aquí es donde en el futuro usaremos una tabla de latitudes y longitudes
