@@ -5,7 +5,7 @@ from sqlalchemy import create_engine, text
 # --- CONFIGURACIÓN DE PÁGINA Y LOGO ---
 st.set_page_config(page_title="POWEN INDUSTRIAL", layout="wide", page_icon="🏭")
 
-# Logo oficial (Asegúrate de que el archivo "logo.png" esté en la misma carpeta)
+# Logo oficial
 st.logo("logo.png")
 
 # --- 1. DICCIONARIO DE GEOLOCALIZACIÓN ---
@@ -34,7 +34,7 @@ def get_engine():
 
 conn = get_engine()
 
-# Crear tabla si no existe (Protección contra errores)
+# Crear tabla si no existe
 with conn.session as s:
     s.execute(text('''
         CREATE TABLE IF NOT EXISTS proyectos (
@@ -50,7 +50,7 @@ menu = st.sidebar.radio("MENÚ PRINCIPAL", ["📊 Dashboard", "➕ Registro de P
 # --- SECCIÓN: DASHBOARD ---
 if menu == "📊 Dashboard":
     st.title("🏭 POWEN INDUSTRIAL")
-    st.markdown("**Panel de Control de Proyectos B2B**")
+    st.markdown("**Dashboard Proyectos B2B**") # <--- CAMBIO REALIZADO AQUÍ
     
     df = conn.query("SELECT * FROM proyectos", ttl=0)
     
@@ -64,7 +64,6 @@ if menu == "📊 Dashboard":
         
         col_graf, col_tabla = st.columns([1, 2])
         
-        # Gráfica corregida (sin width=0)
         col_graf.subheader("Potencia por Estado")
         col_graf.bar_chart(df.groupby("ubicacion")["potencia"].sum(), color="#FFD700")
         
@@ -94,8 +93,6 @@ elif menu == "➕ Registro de Proyectos":
                     )
                     s.commit()
                 st.success(f"✅ Proyecto '{nombre}' guardado exitosamente en Neon.")
-                
-                # Botón manual para refrescar por si acaso
                 st.rerun()
             else:
                 st.error("Por favor ingresa al menos el nombre y una potencia mayor a 0.")
@@ -107,16 +104,12 @@ elif menu == "🗺️ Mapa de Operaciones":
     df_mapa = conn.query("SELECT * FROM proyectos", ttl=0)
     
     if not df_mapa.empty:
-        # Asignar latitud y longitud basándonos en el estado
         df_mapa['lat'] = df_mapa['ubicacion'].map(lambda x: COORDENADAS.get(x, [None, None])[0])
         df_mapa['lon'] = df_mapa['ubicacion'].map(lambda x: COORDENADAS.get(x, [None, None])[1])
         
-        # Limpiar datos que no tengan coordenadas
         datos_mapa = df_mapa.dropna(subset=['lat', 'lon'])
         
         st.map(datos_mapa, latitude='lat', longitude='lon', size=20, color='#FFD700')
-        
-        # Tabla resumen debajo del mapa
         st.dataframe(datos_mapa[['proyecto', 'ubicacion', 'potencia']], use_container_width=True)
     else:
         st.warning("No hay proyectos registrados para mostrar en el mapa.")
