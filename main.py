@@ -45,12 +45,16 @@ with conn.session as s:
     s.commit()
 
 # --- 3. MENÚ LATERAL ---
-menu = st.sidebar.radio("MENÚ PRINCIPAL", ["📊 Dashboard", "➕ Registro de Proyectos", "🗺️ Mapa de Operaciones"])
+# Agregamos las nuevas pestañas a la lista
+menu = st.sidebar.radio(
+    "MENÚ PRINCIPAL", 
+    ["📊 Dashboard", "➕ Registro de Proyectos", "🗺️ Mapa de Operaciones", "🏗️ Operaciones B2B", "🔧 O&M"]
+)
 
 # --- SECCIÓN: DASHBOARD ---
 if menu == "📊 Dashboard":
     st.title("🏭 POWEN INDUSTRIAL")
-    st.markdown("**Dashboard Proyectos B2B**") # <--- CAMBIO REALIZADO AQUÍ
+    st.markdown("**Dashboard Proyectos B2B**")
     
     df = conn.query("SELECT * FROM proyectos", ttl=0)
     
@@ -113,3 +117,13 @@ elif menu == "🗺️ Mapa de Operaciones":
         st.dataframe(datos_mapa[['proyecto', 'ubicacion', 'potencia']], use_container_width=True)
     else:
         st.warning("No hay proyectos registrados para mostrar en el mapa.")
+
+# --- NUEVA SECCIÓN: OPERACIONES B2B ---
+elif menu == "🏗️ Operaciones B2B":
+    st.title("🏗️ Gestión de Obra e Ingeniería")
+    st.info("🚧 Módulo en construcción. Aquí gestionaremos el avance de obra, cronogramas y asignación de instaladores.")
+
+# --- NUEVA SECCIÓN: O&M ---
+elif menu == "🔧 O&M":
+    st.title("🔧 Operación y Mantenimiento")
+    st.info("🚧 Módulo en construcción. Aquí se visualizarán tickets de servicio, monitoreo en tiempo real y limpiezas programadas.")
